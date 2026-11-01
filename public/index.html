@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Katak daftar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:wght@400;600&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Asosiy sozlamalar */
+  :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+  /* Layout concept: a squared lecture notebook (katakli daftar). Topic list on the left, a grid-ruled page with a red margin line on the right; on a phone the two become one screen each. */
+  :root {
+    --paper: #F5F8FC;
+    --paper-2: #EBF1F8;
+    --field: #FFFFFF;
+    --ink: #121C33;
+    --ink-2: #4A5A77;
+    --line: #CBD6E5;
+    --grid: #DCE5F1;
+    --accent: #2548D8;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E3E9FB;
+    --margin: #D4555F;
+    --hi: #FFE46B;
+    --hi-ink: #121C33;
+    --ai: #EAEFFC;
+    --sel: #E1E9F6;
+    --danger: #B8323C;
+    --font-display: "Literata", Georgia, "Times New Roman", serif;
+    --font-ui: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    --cell: 28px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E151F; --paper-2: #0A1018; --field: #0A1018;
+      --ink: #E8EEF8; --ink-2: #9DABC4; --line: #26354A; --grid: #18253A;
+      --accent: #8AA6FF; --accent-ink: #0A1018; --accent-soft: #1B2A4D;
+      --margin: #E27C86; --hi: #6A5D12; --hi-ink: #FFF4B8;
+      --ai: #13203A; --sel: #17243A; --danger: #FF8A93;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E151F; --paper-2: #0A1018; --field: #0A1018;
+    --ink: #E8EEF8; --ink-2: #9DABC4; --line: #26354A; --grid: #18253A;
+    --accent: #8AA6FF; --accent-ink: #0A1018; --accent-soft: #1B2A4D;
+    --margin: #E27C86; --hi: #6A5D12; --hi-ink: #FFF4B8;
+    --ai: #13203A; --sel: #17243A; --danger: #FF8A93;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-block: 12px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .mono { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  mark { background: var(--hi); color: var(--hi-ink); border-radius: 2px; padding: 0 1px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .app { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; max-width: 1080px; margin: 0 auto; }
+  .side, .page { min-width: 0; }
+
+  /* Buttons */
+  .btn {
+    min-height: 40px; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--field); font-weight: 500; font-size: 14px;
+  }
+  .btn:hover { border-color: var(--ink-2); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+  .btn.ghost:hover { color: var(--ink); border-color: var(--line); }
+  .btn.danger.armed { color: var(--danger); border-color: var(--danger); }
+  .btn.chip { background: var(--accent-soft); border-color: transparent; color: var(--ink); }
+  .btn.chip:hover { border-color: var(--accent); }
+
+  /* Side column */
+  .brand { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .mark {
+    position: relative; width: 24px; height: 24px; border: 1.5px solid var(--ink); flex: none;
+    background-image: linear-gradient(var(--ink) 1.5px, transparent 1.5px), linear-gradient(90deg, var(--ink) 1.5px, transparent 1.5px);
+    background-size: 7.5px 7.5px; background-position: -1px -1px;
+  }
+  .mark::after { content: ""; position: absolute; left: 7px; top: 7px; width: 7.5px; height: 7.5px; background: var(--accent); }
+  .brand h1 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 24px; line-height: 1; letter-spacing: -0.01em; }
+
+  .subjects { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .subj {
+    min-height: 34px; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 13.5px; font-weight: 500;
+    border: 1px solid var(--line); background: transparent;
+  }
+  .subj[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .subj.add { color: var(--ink-2); border-style: dashed; }
+  .addsub { display: flex; gap: 6px; width: 100%; }
+  .addsub input { flex: 1; min-width: 0; }
+
+  input[type="search"], input[type="text"], .field {
+    width: 100%; min-height: 42px; padding: 8px 12px; border-radius: 6px;
+    border: 1px solid var(--line); background: var(--field); font-size: 16px;
+  }
+  input::placeholder, textarea::placeholder { color: var(--ink-2); opacity: 0.8; }
+
+  .list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 0 6px; }
+  .store-note { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); }
+  .store-note.bad { color: var(--danger); }
+
+  .notes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .notes li { border-bottom: 1px solid var(--line); }
+  .note-item {
+    display: block; width: 100%; text-align: left; padding: 12px 8px; border: 0; background: transparent; cursor: pointer;
+  }
+  .note-item:hover { background: var(--sel); }
+  .note-item[aria-current="true"] { background: var(--sel); }
+  .note-title { display: block; font-family: var(--font-display); font-weight: 600; font-size: 16.5px; line-height: 1.3; overflow-wrap: anywhere; }
+  .note-snip { display: block; margin-top: 2px; font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .note-when { display: block; margin-top: 4px; }
+  .empty { padding: 20px 4px; }
+  .empty h2 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 19px; }
+  .empty p { margin: 0 0 14px; color: var(--ink-2); max-width: 36ch; }
+  .empty .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* Page column */
+  .page-empty { display: none; padding: 40px 8px; color: var(--ink-2); }
+  .bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar .status { margin-inline: auto 0; }
+  .status.bad { color: var(--danger); }
+  .kicker { margin: 4px 0 2px; }
+  .title {
+    display: block; width: 100%; border: 0; border-bottom: 1px solid transparent; background: transparent; border-radius: 0;
+    font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.2; padding: 6px 0 8px;
+    letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .title:focus { outline: none; border-bottom-color: var(--accent); }
+
+  /* AI helper */
+  .ai { margin: 12px 0 16px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--ai); }
+  .ai-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .scope { text-transform: none; letter-spacing: 0.02em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .ask { display: flex; gap: 8px; }
+  .ask input { flex: 1; min-width: 0; }
+  .ai-off { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .answer { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .answer-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; }
+  .answer-text { margin: 6px 0; font-family: var(--font-display); font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .answer-text.thinking { color: var(--ink-2); font-style: italic; }
+  .answer-note { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); }
+  .answer-note:empty { display: none; }
+  .answer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* The squared sheet */
+  .sheet { position: relative; border: 1px solid var(--line); border-radius: 4px; background: var(--field); overflow: hidden; }
+  .sheet::before { content: ""; position: absolute; top: 0; bottom: 0; left: 40px; width: 1.5px; background: var(--margin); opacity: 0.8; pointer-events: none; }
+  .sheet textarea {
+    display: block; width: 100%; min-height: 336px; resize: none; border: 0; outline: none; background-color: transparent;
+    padding: 0 16px var(--cell) 54px;
+    font-family: var(--font-display); font-size: 16px; line-height: var(--cell);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: var(--cell) var(--cell);
+    background-attachment: local;
+    overflow: hidden;
+  }
+  .sheet:focus-within { border-color: var(--accent); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .answer-text.thinking { animation: breathe 1.6s ease-in-out infinite; }
+    @keyframes breathe { 50% { opacity: 0.45; } }
+  }
+
+  /* Phone: one screen at a time */
+  @media (max-width: 759px) {
+    .app[data-view="list"] .page { display: none; }
+    .app[data-view="note"] .side { display: none; }
+    .title { font-size: 24px; }
+  }
+  /* Wide: both columns */
+  @media (min-width: 760px) {
+    .app { grid-template-columns: minmax(250px, 320px) minmax(0, 1fr); gap: 32px; }
+    .side { position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 32px); overflow-y: auto; padding-right: 20px; border-right: 1px solid var(--line); }
+    .back { display: none; }
+    .page-empty { display: block; }
+    .page-empty[hidden] { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app" data-view="list">
+  <aside class="side" id="side">
+    <header class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <h1>Katak</h1>
+      <span class="mono">konspekt daftar</span>
+    </header>
+
+    <div class="subjects" id="subjects"></div>
+
+    <label class="sr" for="q">Mavzuni qidirish</label>
+    <input id="q" type="search" placeholder="Mavzu nomi yoki so'z bo'yicha qidirish" autocomplete="off">
+
+    <div class="list-head">
+      <span class="mono" id="count"></span>
+      <button class="btn primary" id="newBtn" type="button">+ Yangi mavzu</button>
+    </div>
+    <p class="store-note" id="storeNote" hidden></p>
+    <ul class="notes" id="notes"></ul>
+    <div class="empty" id="emptyList" hidden></div>
+  </aside>
+
+  <main class="page" id="page">
+    <div class="page-empty" id="pageEmpty">Chapdan mavzuni tanlang yoki yangisini yarating.</div>
+
+    <article id="editor" hidden>
+      <div class="bar">
+        <button class="btn ghost back" id="backBtn" type="button">← Mavzular</button>
+        <span class="mono status" id="status" role="status" aria-live="polite"></span>
+        <button class="btn ghost danger" id="delBtn" type="button">O'chirish</button>
+      </div>
+      <p class="mono kicker" id="kicker"></p>
+      <label class="sr" for="title">Mavzu nomi</label>
+      <input class="title" id="title" type="text" placeholder="Mavzu nomi" maxlength="120" autocomplete="off">
+
+      <section class="ai" id="ai" aria-label="AI yordamchi">
+        <div class="ai-head">
+          <span class="mono">AI yordamchi</span>
+          <span class="mono scope" id="scope"></span>
+        </div>
+        <div id="aiTools">
+          <div class="chips">
+            <button class="btn chip" type="button" data-act="explain">Tushuntir</button>
+            <button class="btn chip" type="button" data-act="example">Misol ber</button>
+            <button class="btn chip" type="button" data-act="summary">Konspekt qil</button>
+          </div>
+          <form class="ask" id="askForm">
+            <label class="sr" for="askInput">AI'ga savol</label>
+            <input id="askInput" type="text" placeholder="Tushunmagan joyingizni yozing" autocomplete="off">
+            <button class="btn primary" id="askBtn" type="submit">So'rash</button>
+          </form>
+        </div>
+        <p class="ai-off" id="aiOff" hidden>AI yordamchi hozir ishlamayapti. Daftar esa odatdagidek ishlaydi.</p>
+
+        <div class="answer" id="answer" hidden>
+          <div class="answer-head">
+            <span class="mono" id="answerLabel"></span>
+            <button class="btn ghost" id="stopBtn" type="button" hidden>To'xtatish</button>
+          </div>
+          <div class="answer-text" id="answerText"></div>
+          <p class="answer-note" id="answerNote"></p>
+          <div class="answer-actions">
+            <button class="btn primary" id="insertBtn" type="button" hidden>Daftarga qo'shish</button>
+            <button class="btn ghost" id="closeAns" type="button">Yopish</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="sheet">
+        <label class="sr" for="body">Mavzu matni</label>
+        <textarea id="body" placeholder="Bugungi mavzuni o'zingiz tushungancha yozing. Tushunmagan joyingizni belgilab, AI'dan so'rang." spellcheck="false"></textarea>
+      </div>
+    </article>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const DEFAULT_SUBJECT = "Matematika";
+  const LS_KEY = "katak:v1";
+  const MONTHS = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"];
+
+  const SAMPLE_TITLE = "Matritsalar (namuna)";
+  const SAMPLE_BODY =
+    "Matritsa — sonlardan tuzilgan to'g'ri to'rtburchak jadval. Qatorlar soni m, ustunlar soni n bo'lsa, o'lchami m×n deyiladi.\n\n" +
+    "Misol: A = [1 2; 3 4] — 2×2 o'lchamli (kvadrat) matritsa.\n\n" +
+    "Amallar\n" +
+    "• Qo'shish: bir xil o'lchamli matritsalarning mos elementlari qo'shiladi.\n" +
+    "• Songa ko'paytirish: har bir element shu songa ko'paytiriladi.\n" +
+    "• Matritsalarni ko'paytirish: A (m×n) va B (n×k) ko'paytmasi AB (m×k) bo'ladi. Birinchi matritsaning ustunlari soni ikkinchisining qatorlari soniga teng bo'lishi shart.\n\n" +
+    "Tushunmadim: nima uchun AB ≠ BA bo'lishi mumkin?";
+
+  const state = {
+    notes: new Map(),
+    meta: { subjects: [DEFAULT_SUBJECT] },
+    subject: DEFAULT_SUBJECT,
+    query: "",
+    openId: null,
+    loaded: false,
+  };
+  let sel = { start: 0, end: 0 };
+
+  /* ---------- helpers ---------- */
+  const pad = (n) => String(n).padStart(2, "0");
+  const fmtTime = (ts) => { const d = new Date(ts); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  function fmtWhen(ts) {
+    const d = new Date(ts), now = new Date();
+    if (sameDay(d, now)) return "Bugun, " + fmtTime(ts);
+    const y = new Date(now); y.setDate(now.getDate() - 1);
+    if (sameDay(d, y)) return "Kecha, " + fmtTime(ts);
+    return d.getDate() + " " + MONTHS[d.getMonth()] + (d.getFullYear() !== now.getFullYear() ? " " + d.getFullYear() : "");
+  }
+  const fmtShort = (ts) => { const d = new Date(ts); return d.getDate() + " " + MONTHS[d.getMonth()]; };
+  const str = (v) => (typeof v === "string" ? v : "");
+  const num = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
+  const isNarrow = () => window.matchMedia("(max-width: 759px)").matches;
+
+  function normalize(id, v) {
+    const now = Date.now();
+    return {
+      id,
+      subject: str(v.subject) || DEFAULT_SUBJECT,
+      title: str(v.title),
+      body: str(v.body),
+      createdAt: num(v.createdAt) || now,
+      updatedAt: num(v.updatedAt) || num(v.createdAt) || now,
+    };
+  }
+  const noteData = (n) => ({ subject: n.subject, title: n.title, body: n.body, createdAt: n.createdAt, updatedAt: n.updatedAt });
+  const current = () => (state.openId ? state.notes.get(state.openId) || null : null);
+
+  function subjectList() {
+    const set = [DEFAULT_SUBJECT];
+    state.meta.subjects.forEach((s) => { if (!set.includes(s)) set.push(s); });
+    state.notes.forEach((n) => { if (!set.includes(n.subject)) set.push(n.subject); });
+    return set;
+  }
+
+  function setHighlighted(el, text, q) {
+    el.textContent = "";
+    if (!q) { el.textContent = text; return; }
+    const low = text.toLowerCase(), ql = q.toLowerCase();
+    if (low.length !== text.length) { el.textContent = text; return; }
+    let i = 0, j;
+    while ((j = low.indexOf(ql, i)) !== -1) {
+      if (j > i) el.append(text.slice(i, j));
+      const m = document.createElement("mark");
+      m.textContent = text.slice(j, j + ql.length);
+      el.append(m);
+      i = j + ql.length;
+    }
+    if (i < text.length) el.append(text.slice(i));
+  }
+
+  /* ---------- saqlash: shu qurilmada (localStorage) ---------- */
+  function lsRead() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      return o && typeof o === "object" ? o : null;
+    } catch (e) { return null; }
+  }
+  function lsWrite() {
+    try {
+      const notes = {};
+      state.notes.forEach((n, id) => { notes[id] = noteData(n); });
+      localStorage.setItem(LS_KEY, JSON.stringify({ notes, meta: state.meta }));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  const timers = new Map();
+  function setStatus(kind) {
+    const el = $("status");
+    el.className = "mono status" + (kind === "memory" ? " bad" : "");
+    if (kind === "saving") el.textContent = "Saqlanmoqda…";
+    else if (kind === "saved") el.textContent = "Saqlandi · " + fmtTime(Date.now());
+    else if (kind === "memory") el.textContent = "Brauzer saqlashga ruxsat bermadi";
+    else el.textContent = "";
+  }
+  function persist(id) {
+    setStatus("saving");
+    clearTimeout(timers.get(id));
+    timers.set(id, setTimeout(() => { timers.delete(id); setStatus(lsWrite() ? "saved" : "memory"); }, 500));
+  }
+  function saveMeta() { lsWrite(); }
+  window.addEventListener("pagehide", () => { if (timers.size) lsWrite(); });
+
+  /* ---------- mavzular ---------- */
+  function newId() { return "n" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function createNote(opts) {
+    const now = Date.now();
+    const n = { id: newId(), subject: state.subject, title: (opts && opts.title) || "", body: (opts && opts.body) || "", createdAt: now, updatedAt: now };
+    state.notes.set(n.id, n);
+    state.query = "";
+    $("q").value = "";
+    persist(n.id);
+    renderAll();
+    openNote(n.id, { focusTitle: !(opts && opts.title) });
+  }
+
+  function deleteCurrent() {
+    const id = state.openId;
+    if (!id) return;
+    abortAI();
+    clearTimeout(timers.get(id));
+    timers.delete(id);
+    state.notes.delete(id);
+    closeNote();
+    lsWrite();
+    renderAll();
+  }
+
+  /* ---------- ko'rinish ---------- */
+  function renderSubjects() {
+    const box = $("subjects");
+    box.textContent = "";
+    subjectList().forEach((s) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "subj";
+      b.textContent = s;
+      b.setAttribute("aria-pressed", String(s === state.subject));
+      b.addEventListener("click", () => {
+        if (state.subject === s) return;
+        state.subject = s;
+        closeNote();
+        renderAll();
+      });
+      box.append(b);
+    });
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "subj add";
+    add.textContent = "+ Fan";
+    add.addEventListener("click", () => {
+      add.remove();
+      const f = document.createElement("form");
+      f.className = "addsub";
+      const inp = document.createElement("input");
+      inp.type = "text"; inp.maxLength = 30; inp.placeholder = "Fan nomi"; inp.setAttribute("aria-label", "Yangi fan nomi");
+      inp.id = "subjInput";
+      const ok = document.createElement("button");
+      ok.type = "submit"; ok.className = "btn"; ok.textContent = "Qo'shish";
+      f.append(inp, ok);
+      f.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const name = inp.value.trim().slice(0, 30);
+        if (!name) { renderSubjects(); return; }
+        if (!subjectList().includes(name)) { state.meta.subjects.push(name); saveMeta(); }
+        state.subject = name;
+        closeNote();
+        renderAll();
+      });
+      box.append(f);
+      inp.focus();
+    });
+    box.append(add);
+  }
+
+  function matches(n, q) {
+    const ql = q.toLowerCase();
+    return { title: n.title.toLowerCase().includes(ql), body: n.body.toLowerCase().includes(ql) };
+  }
+
+  function snippet(n, q) {
+    const flat = n.body.replace(/\s+/g, " ").trim();
+    if (!flat) return "";
+    if (q) {
+      const i = flat.toLowerCase().indexOf(q.toLowerCase());
+      if (i > 40) return "…" + flat.slice(i - 30, i + 70);
+    }
+    return flat.length > 96 ? flat.slice(0, 96) + "…" : flat;
+  }
+
+  function renderList() {
+    const ul = $("notes");
+    const empty = $("emptyList");
+    ul.textContent = "";
+    empty.hidden = true;
+    empty.textContent = "";
+
+    const q = state.query;
+    let items = [...state.notes.values()].filter((n) => n.subject === state.subject);
+    const total = items.length;
+    const order = new Map();
+    if (q) {
+      items = items.filter((n) => { const m = matches(n, q); order.set(n.id, m.title ? 0 : 1); return m.title || m.body; });
+    }
+    items.sort((a, b) => (order.get(a.id) || 0) - (order.get(b.id) || 0) || b.updatedAt - a.updatedAt);
+    $("count").textContent = q ? items.length + " ta topildi" : total + " ta mavzu";
+
+    items.forEach((n) => {
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "note-item";
+      b.dataset.id = n.id;
+      if (n.id === state.openId) b.setAttribute("aria-current", "true");
+      const t = document.createElement("span");
+      t.className = "note-title";
+      setHighlighted(t, n.title.trim() || "Nomsiz mavzu", q);
+      b.append(t);
+      const sn = snippet(n, q);
+      if (sn) {
+        const s = document.createElement("span");
+        s.className = "note-snip";
+        setHighlighted(s, sn, q);
+        b.append(s);
+      }
+      const w = document.createElement("span");
+      w.className = "mono note-when";
+      w.textContent = fmtWhen(n.updatedAt);
+      b.append(w);
+      li.append(b);
+      ul.append(li);
+    });
+
+    if (!items.length) {
+      empty.hidden = false;
+      const h = document.createElement("h2");
+      const p = document.createElement("p");
+      if (q) {
+        h.textContent = "Hech narsa topilmadi";
+        p.textContent = "Boshqa so'z bilan urinib ko'ring. Qidiruv mavzu nomi va matn ichidan qidiradi.";
+        empty.append(h, p);
+      } else {
+        h.textContent = "Bu fanda hali mavzu yo'q";
+        p.textContent = "Yozgan mavzularingiz shu yerda ro'yxat bo'ladi. Keyinroq sarlavha yoki so'z bo'yicha tez topasiz.";
+        const row = document.createElement("div");
+        row.className = "row";
+        if (state.subject === DEFAULT_SUBJECT && state.notes.size === 0) {
+          const s = document.createElement("button");
+          s.type = "button"; s.className = "btn primary"; s.textContent = "Namuna mavzu bilan boshlash";
+          s.addEventListener("click", () => createNote({ title: SAMPLE_TITLE, body: SAMPLE_BODY }));
+          row.append(s);
+        }
+        empty.append(h, p, row);
+      }
+    }
+  }
+
+  function renderAll() {
+    renderSubjects();
+    renderList();
+    if (state.openId && !state.notes.has(state.openId)) closeNote();
+  }
+
+  /* ---------- muharrir ---------- */
+  function autosize() {
+    const ta = $("body");
+    ta.style.height = "auto";
+    ta.style.height = Math.max(ta.scrollHeight, 336) + "px";
+  }
+
+  function openNote(id, opts) {
+    const n = state.notes.get(id);
+    if (!n) return;
+    abortAI();
+    hideAnswer();
+    disarm();
+    state.openId = id;
+    $("pageEmpty").hidden = true;
+    $("editor").hidden = false;
+    $("app").dataset.view = "note";
+    $("title").value = n.title;
+    $("body").value = n.body;
+    autosize();
+    $("kicker").textContent = n.subject + " · " + fmtShort(n.createdAt);
+    sel = { start: 0, end: 0 };
+    renderScope();
+    setStatus("");
+    renderList();
+    if (opts && opts.focusTitle) $("title").focus();
+    else if (isNarrow()) window.scrollTo(0, 0);
+  }
+
+  function closeNote() {
+    abortAI();
+    hideAnswer();
+    disarm();
+    state.openId = null;
+    $("editor").hidden = true;
+    $("pageEmpty").hidden = false;
+    $("app").dataset.view = "list";
+  }
+
+  function touch(n) { n.updatedAt = Date.now(); persist(n.id); }
+
+  $("title").addEventListener("input", () => {
+    const n = current(); if (!n) return;
+    n.title = $("title").value;
+    touch(n); renderList(); renderScope();
+  });
+  $("body").addEventListener("input", () => {
+    const n = current(); if (!n) return;
+    n.body = $("body").value;
+    touch(n); autosize(); renderList();
+  });
+
+  $("q").addEventListener("input", () => { state.query = $("q").value.trim(); renderList(); });
+  $("newBtn").addEventListener("click", () => createNote());
+  $("notes").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-id]");
+    if (b) openNote(b.dataset.id);
+  });
+  $("backBtn").addEventListener("click", () => { closeNote(); renderList(); window.scrollTo(0, 0); });
+  window.addEventListener("resize", () => { if (!$("editor").hidden) autosize(); });
+
+  let delTimer = null;
+  function disarm() {
+    clearTimeout(delTimer); delTimer = null;
+    const b = $("delBtn"); b.textContent = "O'chirish"; b.classList.remove("armed");
+  }
+  $("delBtn").addEventListener("click", () => {
+    if (!delTimer) {
+      const b = $("delBtn"); b.textContent = "Ha, o'chirish"; b.classList.add("armed");
+      delTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    disarm();
+    deleteCurrent();
+  });
+
+  /* ---------- tanlangan qism ---------- */
+  function captureSel() {
+    const b = $("body");
+    sel = { start: b.selectionStart, end: b.selectionEnd };
+    renderScope();
+  }
+  ["select", "keyup", "mouseup", "touchend", "focus"].forEach((ev) => $("body").addEventListener(ev, captureSel));
+  document.addEventListener("selectionchange", () => { if (document.activeElement === $("body")) captureSel(); });
+
+  function renderScope() {
+    const n = current();
+    let t = "";
+    if (n) {
+      const len = sel.end - sel.start;
+      if (len > 0 && n.body.slice(sel.start, sel.end).trim()) t = "Tanlangan qism: " + len + " belgi";
+      else if (n.body.trim()) t = "Butun yozuv bo'yicha";
+      else if (n.title.trim()) t = "Mavzu nomi bo'yicha";
+      else t = "Avval mavzu nomini yozing";
+    }
+    $("scope").textContent = t;
+  }
+
+  /* ---------- AI yordamchi (server orqali) ---------- */
+  let ctl = null, lastAnswer = "", lastLabel = "", aiCtx = null;
+  const LABELS = { explain: "Tushuntirish", example: "Misol", summary: "Konspekt", ask: "Savolga javob" };
+
+  function buildContext() {
+    const n = current();
+    const body = n.body;
+    const selected = sel.end > sel.start && sel.end <= body.length ? body.slice(sel.start, sel.end) : "";
+    if (selected.trim()) return { kind: "sel", text: selected.slice(0, 4000), end: sel.end };
+    if (body.trim()) return { kind: "all", text: body.slice(0, 6000), end: body.length };
+    return { kind: "title", text: "", end: body.length };
+  }
+
+  const ERR = {
+    limit_user: "Bugungi AI so'rovlar limitingiz tugadi. Ertaga qayta urinib ko'ring.",
+    limit_global: "Bugun AI so'rovlarining umumiy limiti tugadi. Ertaga qayta urinib ko'ring.",
+    upstream_busy: "AI hozir band. Bir ozdan keyin qayta urinib ko'ring.",
+    network: "Internetga ulanib bo'lmadi. Ulanishni tekshiring.",
+    bad_request: "So'rovni yuborib bo'lmadi. Matnni qisqartirib ko'ring."
+  };
+
+  async function askServer(payload, signal, onText) {
+    let resp;
+    try {
+      resp = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal });
+    } catch (e) {
+      throw { code: e && e.name === "AbortError" ? "cancelled" : "network" };
+    }
+    if (!resp.ok) {
+      let code = "server";
+      try { const j = await resp.json(); if (j && j.error) code = j.error; } catch (e) { /* ignore */ }
+      throw { code };
+    }
+    const remaining = resp.headers.get("X-Remaining");
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let text = "";
+    const clean = (s) => s.replace(/[\u0000\u0001]/g, "");
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += dec.decode(value, { stream: true });
+        onText(clean(text));
+      }
+    } catch (e) {
+      throw { code: e && e.name === "AbortError" ? "cancelled" : "network", text: clean(text) };
+    }
+    text += dec.decode();
+    if (text.includes("\u0000")) throw { code: "upstream_error", text: clean(text) };
+    const out = clean(text);
+    if (!out.trim()) throw { code: "empty_completion" };
+    return { text: out, truncated: text.includes("\u0001"), remaining: remaining === null ? null : Number(remaining) };
+  }
+
+  function setBusy(b) {
+    document.querySelectorAll("[data-act]").forEach((el) => { el.disabled = b; });
+    $("askBtn").disabled = b;
+    $("stopBtn").hidden = !b;
+  }
+  function showAnswer(label) {
+    lastLabel = label; lastAnswer = "";
+    $("answer").hidden = false;
+    $("answerLabel").textContent = label;
+    $("answerNote").textContent = "";
+    $("insertBtn").hidden = true;
+  }
+  function hideAnswer() { $("answer").hidden = true; lastAnswer = ""; }
+  function abortAI() { if (ctl) ctl.abort(); }
+
+  async function runAI(action, question, clearAsk) {
+    if (ctl) return;
+    const n = current();
+    if (!n) return;
+    const ctx = buildContext();
+    showAnswer(LABELS[action]);
+    const out = $("answerText");
+    if (!ctx.text && !n.title.trim()) {
+      out.className = "answer-text";
+      out.textContent = "";
+      $("answerNote").textContent = "Avval mavzu nomini yoki bir necha qator yozuv kiriting.";
+      return;
+    }
+    ctl = new AbortController();
+    aiCtx = { id: n.id, end: ctx.end, bodyLen: n.body.length };
+    out.className = "answer-text thinking";
+    out.textContent = "Fikrlayapti…";
+    setBusy(true);
+    $("answer").scrollIntoView({ block: "nearest" });
+    let note = "";
+    try {
+      const res = await askServer(
+        { action, question, subject: n.subject, title: n.title, kind: ctx.kind, text: ctx.text },
+        ctl.signal,
+        (t) => { if (t) { out.className = "answer-text"; out.textContent = t; } }
+      );
+      lastAnswer = res.text;
+      out.className = "answer-text";
+      out.textContent = res.text;
+      if (res.truncated) note = "Javob qisqartirildi. Kamroq narsa so'rab ko'ring.";
+      else if (res.remaining !== null) note = "Bugun yana " + res.remaining + " ta so'rov qoldi.";
+      if (clearAsk) $("askInput").value = "";
+    } catch (e) {
+      const code = e && e.code;
+      if (e && e.text) { lastAnswer = e.text; out.className = "answer-text"; out.textContent = e.text; }
+      else { out.className = "answer-text"; out.textContent = ""; }
+      if (code === "cancelled") {
+        if (!lastAnswer) hideAnswer(); else note = "To'xtatildi.";
+      } else if (code === "ai_off") {
+        $("aiTools").hidden = true;
+        $("aiOff").hidden = false;
+        hideAnswer();
+      } else {
+        note = ERR[code] || "Xatolik yuz berdi. Birozdan keyin yana urinib ko'ring.";
+      }
+    } finally {
+      ctl = null;
+      setBusy(false);
+      $("answerNote").textContent = note;
+      $("insertBtn").hidden = !lastAnswer.trim();
+    }
+  }
+
+  document.querySelectorAll("[data-act]").forEach((b) => {
+    b.addEventListener("click", () => { if (current()) runAI(b.dataset.act, "", false); });
+  });
+  $("askForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const q = $("askInput").value.trim();
+    if (!q) return;
+    runAI("ask", q, true);
+  });
+  $("stopBtn").addEventListener("click", abortAI);
+  $("closeAns").addEventListener("click", () => { abortAI(); hideAnswer(); });
+  $("insertBtn").addEventListener("click", () => {
+    const n = current();
+    if (!n || !lastAnswer.trim()) return;
+    let block = "\n\n[AI · " + lastLabel + "]\n" + lastAnswer.trim() + "\n";
+    let pos = n.body.length;
+    if (aiCtx && aiCtx.id === n.id && aiCtx.bodyLen === n.body.length) pos = aiCtx.end;
+    if (!n.body.trim()) block = block.trimStart();
+    n.body = n.body.slice(0, pos) + block + n.body.slice(pos);
+    $("body").value = n.body;
+    touch(n); autosize(); renderList();
+    hideAnswer();
+    $("body").scrollIntoView({ block: "nearest" });
+  });
+
+  /* ---------- boshlash ---------- */
+  const o = lsRead();
+  if (o) {
+    if (o.meta && Array.isArray(o.meta.subjects)) state.meta.subjects = o.meta.subjects.filter((s) => typeof s === "string").slice(0, 20);
+    Object.entries(o.notes || {}).forEach(([id, v]) => { if (v && typeof v === "object") state.notes.set(id, normalize(id, v)); });
+  }
+  state.loaded = true;
+  $("storeNote").hidden = false;
+  $("storeNote").textContent = "Mavzular shu qurilmada, shu brauzerda saqlanadi.";
+  renderAll();
+})();
+</script>
+</body>
+</html>
